@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(bodyParser.json());
 
-// Função para carregar os usuários
+// Carregar usuários
 function carregarUsuarios() {
   if (!fs.existsSync(DB_PATH)) {
     fs.writeFileSync(DB_PATH, JSON.stringify({}, null, 2));
@@ -17,12 +17,12 @@ function carregarUsuarios() {
   return conteudo ? JSON.parse(conteudo) : {};
 }
 
-// Função para salvar os usuários
+// Salvar usuários
 function salvarUsuarios(usuarios) {
   fs.writeFileSync(DB_PATH, JSON.stringify(usuarios, null, 2));
 }
 
-// Rota de teste
+// Rota teste
 app.get('/', (req, res) => {
   res.send('🚀 Servidor webhook NutriIA rodando!');
 });
@@ -34,10 +34,13 @@ app.post('/webhook', (req, res) => {
   try {
     const data = req.body;
 
-    const status = (data.status || '').toLowerCase();
-    const telefone = data.customer?.phone || data.phone;
+    const status = (data.sale_status_enum_key || '').toLowerCase();
 
-    if (!telefone) {
+    const ddd = data.customer?.phone_area_code || '';
+    const numero = data.customer?.phone_number || '';
+    const telefone = `55${ddd}${numero}`;
+
+    if (!telefone || telefone.length < 10) {
       console.log('❌ Telefone não encontrado no payload!');
       return res.status(400).json({ message: 'Telefone não encontrado no payload.' });
     }
@@ -45,7 +48,7 @@ app.post('/webhook', (req, res) => {
     const numeroFormatado = `${telefone.replace(/\D/g, '')}@c.us`;
     const usuarios = carregarUsuarios();
 
-    if (status === 'aprovado' || status === 'approved') {
+    if (status === 'approved') {
       if (usuarios[numeroFormatado]) {
         usuarios[numeroFormatado].liberado = true;
         salvarUsuarios(usuarios);
