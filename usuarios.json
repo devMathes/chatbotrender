@@ -1,4 +1,15 @@
 {
+  "5521998465675@c.us": {
+    "etapa": "final",
+    "liberado": false,
+    "peso": "70",
+    "altura": "1,70",
+    "idade": "20",
+    "preferencias": "carne",
+    "restricao": "nenhuma",
+    "saude": "nenhum",
+    "objetivo": "ganhar massa"
+  },
   "5521967693535@c.us": {
     "etapa": "final",
     "liberado": false,
@@ -9,23 +20,5 @@
     "restricao": "nenhuma",
     "saude": "nenhum",
     "objetivo": "ganhar massa"
-  },
-  "5521998465675@c.us": {
-    "etapa": "final",
-    "liberado": false,
-    "peso": "65",
-    "altura": "1,70",
-    "idade": "20",
-    "preferencias": "carne",
-    "restricao": "não",
-    "saude": "não",
-    "objetivo": "ganhar massa"
-  },
-  "447710173736@c.us": {
-    "etapa": "preferencias",
-    "liberado": false,
-    "peso": "",
-    "altura": "85431 é seu código de confirmação do facebook",
-    "idade": ""
   }
 }
