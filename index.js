@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(bodyParser.json());
 
-// Carregar usuários
+// Função para carregar os usuários
 function carregarUsuarios() {
   if (!fs.existsSync(DB_PATH)) {
     fs.writeFileSync(DB_PATH, JSON.stringify({}, null, 2));
@@ -17,38 +17,49 @@ function carregarUsuarios() {
   return conteudo ? JSON.parse(conteudo) : {};
 }
 
-// Salvar usuários
+// Função para salvar os usuários
 function salvarUsuarios(usuarios) {
   fs.writeFileSync(DB_PATH, JSON.stringify(usuarios, null, 2));
 }
 
-// Rota teste
+// Rota de teste
 app.get('/', (req, res) => {
-  res.send('🚀 Servidor webhook NutriIA rodando!');
+  res.send('🚀 Webhook NutriIA rodando! Está online!');
 });
 
-// Webhook PerfectPay
+// Webhook da PerfectPay
 app.post('/webhook', (req, res) => {
   console.log('✅ Webhook recebido:\n', JSON.stringify(req.body, null, 2));
 
   try {
     const data = req.body;
-
     const status = (data.sale_status_enum_key || '').toLowerCase();
 
+    // Tentar capturar telefone de múltiplos formatos
     const ddd = data.customer?.phone_area_code || '';
     const numero = data.customer?.phone_number || '';
-    const telefone = `55${ddd}${numero}`;
+    const telefoneDireto = data.customer?.phone || data.phone || '';
 
-    if (!telefone || telefone.length < 10) {
-      console.log('❌ Telefone não encontrado no payload!');
+    let telefone = '';
+
+    if (telefoneDireto) {
+      telefone = telefoneDireto.replace(/\D/g, '');
+      if (!telefone.startsWith('55')) {
+        telefone = '55' + telefone;
+      }
+    } else if (ddd && numero) {
+      telefone = `55${ddd}${numero}`;
+    }
+
+    if (!telefone || telefone.length < 11) {
+      console.log('❌ Telefone não encontrado ou inválido no payload!');
       return res.status(400).json({ message: 'Telefone não encontrado no payload.' });
     }
 
-    const numeroFormatado = `${telefone.replace(/\D/g, '')}@c.us`;
+    const numeroFormatado = `${telefone}@c.us`;
     const usuarios = carregarUsuarios();
 
-    if (status === 'approved') {
+    if (status === 'approved' || status === 'aprovado') {
       if (usuarios[numeroFormatado]) {
         usuarios[numeroFormatado].liberado = true;
         salvarUsuarios(usuarios);
