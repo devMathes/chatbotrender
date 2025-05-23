@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(bodyParser.json());
 
-// Função para carregar os usuários
+// 🔧 Função para carregar os usuários
 function carregarUsuarios() {
   if (!fs.existsSync(DB_PATH)) {
     fs.writeFileSync(DB_PATH, JSON.stringify({}, null, 2));
@@ -17,49 +17,59 @@ function carregarUsuarios() {
   return conteudo ? JSON.parse(conteudo) : {};
 }
 
-// Função para salvar os usuários
+// 🔧 Função para salvar os usuários
 function salvarUsuarios(usuarios) {
   fs.writeFileSync(DB_PATH, JSON.stringify(usuarios, null, 2));
 }
 
-// Rota de teste
+// 🔥 Função para normalizar o telefone
+function normalizarTelefone(ddd, numero, telefoneDireto) {
+  let telefone = '';
+
+  if (telefoneDireto) {
+    telefone = telefoneDireto.replace(/\D/g, '');
+    if (!telefone.startsWith('55')) {
+      telefone = '55' + telefone;
+    }
+  } else if (ddd && numero) {
+    telefone = `55${ddd}${numero}`.replace(/\D/g, '');
+  }
+
+  if (telefone.length < 11) {
+    return null; // inválido
+  }
+
+  return `${telefone}@c.us`;
+}
+
+// ✅ Rota de teste
 app.get('/', (req, res) => {
-  res.send('🚀 Webhook NutriIA rodando! Está online!');
+  res.send('🚀 Servidor webhook NutriIA rodando!');
 });
 
-// Webhook da PerfectPay
+// 🚀 Rota Webhook da PerfectPay
 app.post('/webhook', (req, res) => {
   console.log('✅ Webhook recebido:\n', JSON.stringify(req.body, null, 2));
 
   try {
     const data = req.body;
+
     const status = (data.sale_status_enum_key || '').toLowerCase();
 
-    // Tentar capturar telefone de múltiplos formatos
     const ddd = data.customer?.phone_area_code || '';
     const numero = data.customer?.phone_number || '';
     const telefoneDireto = data.customer?.phone || data.phone || '';
 
-    let telefone = '';
+    const numeroFormatado = normalizarTelefone(ddd, numero, telefoneDireto);
 
-    if (telefoneDireto) {
-      telefone = telefoneDireto.replace(/\D/g, '');
-      if (!telefone.startsWith('55')) {
-        telefone = '55' + telefone;
-      }
-    } else if (ddd && numero) {
-      telefone = `55${ddd}${numero}`;
-    }
-
-    if (!telefone || telefone.length < 11) {
+    if (!numeroFormatado) {
       console.log('❌ Telefone não encontrado ou inválido no payload!');
       return res.status(400).json({ message: 'Telefone não encontrado no payload.' });
     }
 
-    const numeroFormatado = `${telefone}@c.us`;
     const usuarios = carregarUsuarios();
 
-    if (status === 'approved' || status === 'aprovado') {
+    if (status === 'approved') {
       if (usuarios[numeroFormatado]) {
         usuarios[numeroFormatado].liberado = true;
         salvarUsuarios(usuarios);
@@ -79,7 +89,7 @@ app.post('/webhook', (req, res) => {
   }
 });
 
-// Inicia o servidor
+// 🚀 Inicia o servidor
 app.listen(PORT, () => {
   console.log(`🚀 Webhook rodando na porta ${PORT}`);
 });
