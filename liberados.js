@@ -1,17 +1,18 @@
 const fs = require('fs');
 const axios = require('axios');
 const path = require('path');
-require('dotenv').config(); // Carrega variáveis de ambiente
+require('dotenv').config();
 
 const CAMINHO = path.join(__dirname, 'usuarios.json');
 const CHAVE_GROQ = process.env.GROQ_API_KEY;
 
-// ✅ Formata o número para o padrão do WhatsApp
+// ✅ Formata número no padrão WhatsApp
 function formatarNumero(numero) {
-  return `${numero.replace(/\D/g, '')}@c.us`;
+  const numeroLimpo = numero.replace(/\D/g, '');
+  return `${numeroLimpo}@c.us`;
 }
 
-// 🔗 Carrega os dados salvos dos usuários
+// 🔗 Carrega dados dos usuários
 function carregarUsuarios() {
   if (!fs.existsSync(CAMINHO)) {
     fs.writeFileSync(CAMINHO, JSON.stringify({}, null, 2));
@@ -25,34 +26,35 @@ function carregarUsuarios() {
   }
 }
 
-// 💾 Salva os dados no arquivo JSON
+// 💾 Salva os dados
 function salvarUsuarios(usuarios) {
   fs.writeFileSync(CAMINHO, JSON.stringify(usuarios, null, 2));
 }
 
-// ✅ Libera o acesso de um número ao plano
+// ✅ Libera usuário após pagamento
 function liberarUsuario(numero) {
   const usuarios = carregarUsuarios();
-  const numFormatado = formatarNumero(numero);
+  const numFormatado = formatarNumero(numero.replace('@c.us', ''));
   if (!usuarios[numFormatado]) usuarios[numFormatado] = {};
   usuarios[numFormatado].liberado = true;
   usuarios[numFormatado].etapa = 'final';
   salvarUsuarios(usuarios);
   console.log(`✅ Usuário ${numFormatado} liberado para o Plano Essencial`);
+  return numFormatado;
 }
 
-// 🔥 Consulta a IA da Groq com os dados do usuário e a pergunta feita
+// 🔥 Consulta IA Groq
 async function consultarIA(numero, pergunta) {
   const usuarios = carregarUsuarios();
-  const numFormatado = formatarNumero(numero);
+  const numFormatado = formatarNumero(numero.replace('@c.us', ''));
   const user = usuarios[numFormatado];
 
   if (!user) {
-    return '⚠️ Você ainda não fez a avaliação. Por favor, envie "oi" para começar.';
+    return '⚠️ Você ainda não fez a avaliação. Envie "oi" para começar.';
   }
 
   if (!user.liberado) {
-    return '🚫 Seu acesso não está liberado. Complete o pagamento para ter acesso ao plano.';
+    return '🚫 Seu acesso não está liberado. Complete o pagamento para acessar o plano.';
   }
 
   const promptBase = `
@@ -97,11 +99,10 @@ Responda com recomendações personalizadas de alimentação, treino e motivaç�
 
   } catch (err) {
     console.error('🚨 Erro na consulta à Groq:', err.response?.data || err.message);
-    return '❌ Desculpe, ocorreu um erro ao consultar a nutricionista. Tente novamente em instantes.';
+    return '❌ Erro ao consultar a nutricionista. Tente novamente em instantes.';
   }
 }
 
-// 🚀 Exporta funções para uso no chatbot
 module.exports = {
   carregarUsuarios,
   salvarUsuarios,
